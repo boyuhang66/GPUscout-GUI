@@ -35,7 +35,7 @@ Author: Tobias Stuckenberger
 </template>
 <script setup>
 import { Analysis } from '../../../utils/Analysis';
-import { getMetricsData } from '../../../utils/formatters';
+import { getMetricsData, formatMetricValue } from '../../../utils/formatters';
 import { Arrow, DIRECTION } from '../../../utils/MemoryGraphComponents';
 
 const props = defineProps({
@@ -55,22 +55,27 @@ function getTitle(comparison = false, useBottomMetric = false) {
     if (comparison && !props.comparisonAnalysisData) return '';
     if (useBottomMetric && !props.arrow.metricBottom) return '';
     const metric = useBottomMetric ? props.arrow.metricBottom : props.arrow.metric;
-    const metricsData = getMetricsData(metric);
+    const metricData = getMetricsData(metric);
+    // If the comparison analysis data is available, use it to get the metric value. Otherwise, use the main analysis data.
     if (comparison) {
-        return metricsData.format_function(props.comparisonAnalysisData.getMetric(metric));
-    } else {
-        if (props.comparisonAnalysisData) {
-            const diff = props.analysisData.getMetric(metric) - props.comparisonAnalysisData.getMetric(metric);
-            let changeColor = '';
-            if ((diff < 0 && metricsData.lower_better) || (diff > 0 && !metricsData.lower_better))
-                changeColor = 'text-green-600';
-            else if (diff !== 0) changeColor = 'text-red-400';
-            return (
-                `<a class="${changeColor}"> ` + metricsData.format_function(props.analysisData.getMetric(metric)) + '</a>'
-            );
-        }
-        return metricsData.format_function(props.analysisData.getMetric(metric));
+        const comparisonValue = props.comparisonAnalysisData.getMetric(metric);
+        return formatMetricValue(metricData, comparisonValue);
     }
+    const value = props.analysisData.getMetric(metric);
+    const formattedValue = formatMetricValue(metricData, value);
+    if (!props.comparisonAnalysisData)
+        return formattedValue;
+    const comparisonValue = props.comparisonAnalysisData.getMetric(metric);
+    // Missing values must not participate in ordering comparisons.
+    if (!Number.isFinite(value) || !Number.isFinite(comparisonValue))
+        return formattedValue;
+    let changeColor = '';
+    if ((value < comparisonValue && metricData.lower_better) || (value > comparisonValue && !metricData.lower_better))
+        changeColor = 'text-green-600';
+    else if (value !== comparisonValue)
+        changeColor = 'text-red-400';
+
+    return `<a class="${changeColor}">${formattedValue}</a>`;
 }
 
 /**

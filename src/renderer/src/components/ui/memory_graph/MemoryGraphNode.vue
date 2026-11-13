@@ -17,7 +17,7 @@ Author: Tobias Stuckenberger
 </template>
 <script setup>
 import { Analysis } from '../../../utils/Analysis';
-import { getMetricsData } from '../../../utils/formatters';
+import { getMetricsData, formatMetricValue } from '../../../utils/formatters';
 import { Node, NodeMetricContent, NodeTextContent } from '../../../utils/MemoryGraphComponents';
 
 const props = defineProps({
@@ -66,23 +66,24 @@ function getTitle(entry) {
         }
         return entry.title.replace('{size}', '');
     } else if (entry instanceof NodeMetricContent) {
+        // If both the main and comparison analysis data are available, use the comparison format. Otherwise, use the regular format.
         const metricData = getMetricsData(entry.metric);
-        if (props.comparisonAnalysisData !== undefined) {
-            const diff = props.analysisData.getMetric(entry.metric) - props.comparisonAnalysisData.getMetric(entry.metric);
-            let changeColor = '';
-            if ((diff < 0 && metricData.lower_better) || (diff > 0 && !metricData.lower_better))
+        const value = props.analysisData.getMetric(entry.metric);
+        const formattedValue = formatMetricValue(metricData, value);
+        if (!props.comparisonAnalysisData)
+            return entry.format.replace('{value}', formattedValue);
+        const comparisonValue = props.comparisonAnalysisData.getMetric(entry.metric);
+        const formattedComparisonValue = formatMetricValue(metricData, comparisonValue);
+        let changeColor = '';
+        // Apply comparison colors only when both values are finite numbers.
+        if (Number.isFinite(value) && Number.isFinite(comparisonValue)) {
+            if ((value < comparisonValue && metricData.lower_better) || (value > comparisonValue && !metricData.lower_better))
                 changeColor = 'text-green-300';
-            else if (diff !== 0) changeColor = 'text-red-300';
-            return entry.comparisonFormat
-                .replace(
-                    '{value}',
-                    `<p class="${changeColor}">` +
-                        metricData.format_function(props.analysisData.getMetric(entry.metric)) +
-                        '</p>'
-                )
-                .replace('{comp_value}', metricData.format_function(props.comparisonAnalysisData.getMetric(entry.metric)));
+            else if (value !== comparisonValue)
+                changeColor = 'text-red-300';
         }
-        return entry.format.replace('{value}', metricData.format_function(props.analysisData.getMetric(entry.metric)));
+
+        return entry.comparisonFormat.replace('{value}', `<span class="${changeColor}">${formattedValue}</span>`).replace('{comp_value}', formattedComparisonValue);
     }
 }
 

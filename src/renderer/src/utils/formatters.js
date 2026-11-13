@@ -70,7 +70,7 @@ export function formatInstructions(value) {
  * @returns {String} The value formatted
  */
 export function formatInstructionsPerc(value, percent) {
-    if (percent) {
+    if (Number.isFinite(percent)) { // Avoid ignoring 0% values, which are valid and should be displayed
         return `${formatNumber(value)} Inst. (${formatPercent(percent)})`;
     } else {
         return `${formatNumber(value)} Inst.`;
@@ -137,4 +137,19 @@ export function formatStall(value1, value2) {
     } else {
         return `${formatNumber(value2)} (${formatPercent(value1)})`;
     }
+}
+
+/**
+ * Format a metric without treating unavailable values as zero.
+ * The secondary value is optional.
+ */
+export function formatMetricValue(data, value, secondaryValue) {
+    if (value === null || value === undefined)
+        return 'N/A';
+
+    if (typeof value === 'number' && !Number.isFinite(value))
+        return 'N/A';
+
+    const validSecondaryValue = Number.isFinite(secondaryValue) ? secondaryValue : undefined;
+    return data.format_function(value, validSecondaryValue);
 }

@@ -13,10 +13,10 @@ Author: Tobias Stuckenberger
             </p>
             <div class="flex justify-between" :class="getFlexDirection()">
                 <p>
-                    {{ data.format_function(value, secondaryValue) }}
+                    {{ formatMetricValue(data, value, secondaryValue) }}
                 </p>
                 <div
-                    v-if="comparisonValue !== undefined"
+                    v-if="canCompare"
                     class="flex px-2"
                     :class="
                         (value < comparisonValue && data.lower_better) || (value > comparisonValue && !data.lower_better)
@@ -33,7 +33,7 @@ Author: Tobias Stuckenberger
                     </p>
                 </div>
                 <p v-if="comparisonValue !== undefined">
-                    {{ data.format_function(comparisonValue, comparisonSecondaryValue) }}
+                    {{ formatMetricValue(data, comparisonValue, comparisonSecondaryValue) }}
                 </p>
             </div>
         </a>
@@ -42,8 +42,9 @@ Author: Tobias Stuckenberger
 </template>
 <script setup>
 import { POPUP, useContextStore } from '../../../stores/ContextStore';
-import { formatNumber, getMetricsData } from '../../../utils/formatters';
+import { formatNumber, getMetricsData, formatMetricValue } from '../../../utils/formatters';
 import ButtonHelp from './ButtonHelp.vue';
+import { computed } from 'vue';
 
 const props = defineProps({
     metric: String,
@@ -55,6 +56,8 @@ const props = defineProps({
     valueSmall: Boolean
 });
 
+// Differences and ordering comparisons require two finite numeric values.
+const canCompare = computed(() => Number.isFinite(props.value) && Number.isFinite(props.comparisonValue));
 const contextStore = useContextStore();
 const data = getMetricsData(props.metric);
 

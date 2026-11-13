@@ -33,8 +33,36 @@ const dataStore = useDataStore();
 
 const currentKernel = computed(() => dataStore.getCurrentKernel);
 
-const analysisData = computed(() => dataStore.getGPUscoutResult().getAnalysis('use_restrict', currentKernel.value));
-const comparisonAnalysisData = computed(() =>
-    dataStore.getGPUscoutComparisonResult()?.getAnalysis('use_restrict', currentKernel.value)
-);
+// Get the analysis data for the current kernel(instead of hardcoding the analysis name) 
+const analysisData = computed(() => {
+    const result = dataStore.getGPUscoutResult();
+
+    for (const analysisName of Object.keys(result.getAnalyses())) {
+        const analysis = result.getAnalysis(analysisName, currentKernel.value);
+
+        if (analysis) {
+            return analysis;
+        }
+    }
+
+    return undefined;
+});
+
+const comparisonAnalysisData = computed(() => {
+    const result = dataStore.getGPUscoutComparisonResult();
+
+    if (!result) {
+        return undefined;
+    }
+
+    for (const analysisName of Object.keys(result.getAnalyses())) {
+        const analysis = result.getAnalysis(analysisName, currentKernel.value);
+
+        if (analysis) {
+            return analysis;
+        }
+    }
+
+    return undefined;
+});
 </script>

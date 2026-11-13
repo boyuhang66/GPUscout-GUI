@@ -251,7 +251,7 @@ export class GPUscoutResult {
      * @returns {Number} The correspoonding metric value
      */
     getMetric(kernel, metric) {
-        return this._metrics[kernel][metric] || 0;
+        return this._metrics[kernel]?.[metric] ?? undefined;
     }
 
     /**
@@ -1099,13 +1099,17 @@ export class GPUscoutResult {
             this._metrics[resultJSON['kernels'][kernel]] = {};
 
             for (const [key, value] of Object.entries(resultJSON['metrics'][kernel])) {
+                if (value === null)
+                    continue;
                 // Loop through all keys
                 if (typeof value === 'object') {
                     // Some metrics are nested in another level of objects
                     for (const [deepJsonMetricName, deepMetricValue] of Object.entries(value)) {
-                        this._metrics[resultJSON['kernels'][kernel]][`${key}/${deepJsonMetricName}`] = deepMetricValue;
+                        if (Number.isFinite(deepMetricValue)) {
+                            this._metrics[resultJSON['kernels'][kernel]][`${key}/${deepJsonMetricName}`] = deepMetricValue;
+                        }
                     }
-                } else {
+                } else if (Number.isFinite(value)) {
                     this._metrics[resultJSON['kernels'][kernel]][key] = value;
                 }
             }

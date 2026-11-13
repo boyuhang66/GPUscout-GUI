@@ -60,20 +60,24 @@ export class Analysis {
 
         // Add analysis specific metrics
         if (analysisData.metrics) {
+            // Add valid analysis-specific metrics without converting missing values to zero.
+            const addMetric = (name, value) => {
+                if (!Number.isFinite(value))
+                    return;
+                this._metrics[name] = value;
+                this._ownMetrics[name] = value;
+            };
+
             for (const [jsonMetricName, metricValue] of Object.entries(analysisData.metrics)) {
                 if (metricValue === null) {
-                    // Invalid metric value
-                    this._metrics[jsonMetricName] = 0;
-                    this._ownMetrics[jsonMetricName] = 0;
+                    continue;
                 } else if (typeof metricValue === 'object') {
                     // Metric is nested -> Metric name is of form 'category/metric'
                     for (const [deepJsonMetricName, deepMetricValue] of Object.entries(metricValue)) {
-                        this._metrics[`${jsonMetricName}/${deepJsonMetricName}`] = deepMetricValue;
-                        this._ownMetrics[`${jsonMetricName}/${deepJsonMetricName}`] = deepMetricValue;
+                        addMetric(`${jsonMetricName}/${deepJsonMetricName}`, deepMetricValue);
                     }
                 } else {
-                    this._metrics[jsonMetricName] = metricValue;
-                    this._ownMetrics[jsonMetricName] = metricValue;
+                    addMetric(jsonMetricName, metricValue);
                 }
             }
         }
@@ -101,7 +105,7 @@ export class Analysis {
      * @returns {Number} The value of the metric
      */
     getMetric(metric) {
-        return this._metrics[metric] || this._ownMetrics[metric] || 0;
+        return this._metrics[metric] ?? this._ownMetrics[metric] ?? undefined;
     }
 
     /**

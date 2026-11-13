@@ -148,12 +148,11 @@ function getAnalysesPerKernel(kernel) {
  * @returns {String} A special style if this analysis entry is currently selected
  */
 function getAnalysisStyle(analysis) {
-    const hasWarning =
-        dataStore
-            .getGPUscoutResult()
-            .getAnalysis(analysis, currentKernel.value)
-            .getOccurrences()
-            .filter((o) => o.isWarning).length > 0;
+    const mainAnalysis = dataStore.getGPUscoutResult()?.getAnalysis(analysis, currentKernel.value);
+    const comparisonAnalysis = dataStore.getGPUscoutComparisonResult()?.getAnalysis(analysis, currentKernel.value);
+    const analysisData = mainAnalysis ?? comparisonAnalysis;
+
+    const hasWarning = analysisData?.getOccurrences().some((o) => o.isWarning) ?? false;
     const noWarningStyle = hasWarning ? '' : 'text-background/50 ';
     return noWarningStyle + (analysis === currentAnalysis.value ? 'font-bold' : '');
 }

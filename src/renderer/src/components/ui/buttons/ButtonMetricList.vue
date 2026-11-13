@@ -9,28 +9,19 @@ Author: Tobias Stuckenberger
             <p class="line-clamp-2 min-w-12 self-center">{{ data.display_name }}</p>
             <div class="flex grow flex-row items-center justify-end text-sm">
                 <p v-if="comparisonValue !== undefined" class="text-center">
-                    {{ data.format_function(comparisonValue, comparisonSecondaryValue) }}
+                    {{ formatMetricValue(data, comparisonValue, comparisonSecondaryValue) }}
                 </p>
                 <p v-if="comparisonValue !== undefined" class="px-1">vs</p>
-                <p
-                    class="text-center"
-                    :class="
-                        comparisonValue !== undefined &&
-                        ((value < comparisonValue && data.lower_better) || (value > comparisonValue && !data.lower_better))
-                            ? 'text-green-300'
-                            : comparisonValue !== undefined && value !== comparisonValue
-                              ? 'text-red-300'
-                              : ''
-                    "
-                >
-                    {{ data.format_function(value, secondaryValue) }}
+                <p class="text-center" :class="comparisonClass">
+                    {{ formatMetricValue(data, value, secondaryValue) }}
                 </p>
             </div>
         </a>
     </div>
 </template>
 <script setup>
-import { getMetricsData } from '../../../utils/formatters';
+import { getMetricsData, formatMetricValue } from '../../../utils/formatters';
+import { computed } from 'vue';
 
 const props = defineProps({
     metric: String,
@@ -39,6 +30,19 @@ const props = defineProps({
     hint: String,
     secondaryValue: Number,
     comparisonSecondaryValue: Number
+});
+
+const canCompare = computed(() => Number.isFinite(props.value) && Number.isFinite(props.comparisonValue));
+
+const comparisonClass = computed(() => {
+    if (!canCompare.value || props.value === props.comparisonValue)
+        return '';
+
+    const isBetter = data.lower_better
+        ? props.value < props.comparisonValue
+        : props.value > props.comparisonValue;
+
+    return isBetter ? 'text-green-300' : 'text-red-300';
 });
 
 const data = getMetricsData(props.metric);
